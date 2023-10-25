@@ -38,7 +38,7 @@ class SearchScreen extends StatelessWidget {
                   prefix: Icons.search,
                 ),
                 Expanded(
-                  child: articleBuilder(list, context),
+                  child: articleBuilder(list, context,isSearch: true),
                 ),
               ],
             ),
