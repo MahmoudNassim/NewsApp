@@ -4,7 +4,9 @@ import 'package:news_app/modules/business.dart';
 import 'package:news_app/modules/science.dart';
 import 'package:news_app/modules/sports.dart';
 import 'package:news_app/shared/cubit/states.dart';
+import 'package:news_app/shared/network/local/cache_helper.dart';
 import 'package:news_app/shared/network/remote/dio_helper.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class NewsCubit extends Cubit<NewsStates> {
   NewsCubit() : super(NewsInitialState());
@@ -45,7 +47,6 @@ class NewsCubit extends Cubit<NewsStates> {
       business = value.data['articles'];
       emit(NewsGetBusinessSuccessState());
     }).catchError((error) {
-      print(error.toString());
       emit(NewsGetBusinessErrorState(error.toString()));
     });
   }
@@ -61,7 +62,6 @@ class NewsCubit extends Cubit<NewsStates> {
         sports = value.data['articles'];
         emit(NewsGetSportsSuccessState());
       }).catchError((error) {
-        print(error.toString());
         emit(NewsGetSportsErrorState(error.toString()));
       });
     } else {
@@ -79,12 +79,31 @@ class NewsCubit extends Cubit<NewsStates> {
       }).then((value) {
         science = value.data['articles'];
       }).catchError((error) {
-        print(error.toString());
         emit(NewsGetScienceErrorState(error.toString()));
       });
     } else {
       emit(NewsGetScienceSuccessState());
     }
+  }
+
+  List<dynamic> search = [];
+
+  void getSearch(String value) {
+    emit(NewsGetSearchLoadingState());
+    search = [];
+
+    DioHelper.getData(
+      url: 'v2/everything',
+      query: {
+        'q': value,
+        'apiKey': '35a1b05a85ac4100a33bc88e0e41e941',
+      },
+    ).then((value) {
+      search = value.data['articles'];
+      emit(NewsGetSearchSuccessState());
+    }).catchError((error) {
+      emit(NewsGetSearchErrorState(error.toString()));
+    });
   }
 
   void changeBottomNavBar(int index) {
@@ -94,9 +113,24 @@ class NewsCubit extends Cubit<NewsStates> {
     emit(NewsBottomNavState());
   }
 
-  bool isdark = false ;
-  changeAppMode(){
-    isdark =! isdark ;
-    emit(NewsChangeModeState());
+  bool isdark = false;
+  changeAppMode({bool? fromShared}) {
+    if (fromShared != null) {
+      isdark = fromShared;
+    } else {
+      isdark = !isdark;
+      CacheHelper.putBoolean(key: 'isdark', value: isdark).then((value) {
+        emit(NewsChangeModeState());
+      });
+    }
+  }
+
+  late final controller = WebViewController();
+
+  void getwebView(String? url) {
+      controller.loadRequest(
+        Uri.parse(url!),
+      );
+    emit(NewswebState());
   }
 }

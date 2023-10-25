@@ -3,33 +3,39 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:news_app/layout/news_layout.dart';
-import 'package:news_app/shared/app_cupit/cubit/cubit.dart';
-import 'package:news_app/shared/app_cupit/cubit/states.dart';
 import 'package:news_app/shared/bloc_observer.dart';
+import 'package:news_app/shared/cubit/cubit.dart';
+import 'package:news_app/shared/cubit/states.dart';
+import 'package:news_app/shared/network/local/cache_helper.dart';
 import 'package:news_app/shared/network/remote/dio_helper.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = MyBlocObserver();
   DioHelper.init();
+ await CacheHelper.init();
+ bool? isdark = CacheHelper.getBoolean(key: 'isdark' )?? false;
 
-  runApp(const MyApp());
+  runApp( MyApp(isdark));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  final bool isdark ;
+   const MyApp(this.isdark, {super.key});
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => AppCubit(),
-      child: BlocConsumer<AppCubit, AppStates>(
+      create: (context) => NewsCubit()..getBusiness()..changeAppMode(fromShared: isdark),
+      child: BlocConsumer<NewsCubit, NewsStates>(
         listener: (context, state) {},
         builder: (context, state) {
           return MaterialApp(
             home: const NewsLayout(),
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
+              brightness: Brightness.light,
+              primarySwatch: Colors.deepOrange,
               scaffoldBackgroundColor: Colors.white,
               appBarTheme: const AppBarTheme(
                 titleSpacing: 20,
@@ -37,7 +43,8 @@ class MyApp extends StatelessWidget {
                       statusBarColor: Colors.white,
                       statusBarIconBrightness: Brightness.dark,
                       ),
-                      titleTextStyle: TextStyle(color: Colors.black,
+                      titleTextStyle: TextStyle(
+                      color: Colors.black,
                       fontSize: 20,
                       fontWeight: FontWeight.bold
                       ),
@@ -47,15 +54,10 @@ class MyApp extends StatelessWidget {
               bottomNavigationBarTheme: const BottomNavigationBarThemeData(
                   type: BottomNavigationBarType.fixed,
                   selectedItemColor: Colors.deepOrange),
-              textTheme: const TextTheme(
-                titleMedium: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-            darkTheme: ThemeData(
               
+            ),
+            darkTheme: ThemeData( 
+              brightness: Brightness.dark,             
               scaffoldBackgroundColor: HexColor('333739'),
               appBarTheme: AppBarTheme(
                 titleSpacing: 20,
@@ -76,18 +78,10 @@ class MyApp extends StatelessWidget {
                 selectedItemColor: Colors.deepOrange,
                 unselectedItemColor: Colors.grey,
               ),
-              textTheme: const TextTheme(
-                headline6: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
-                    
-              ),
-              primarySwatch: Colors.deepOrange
+             primarySwatch: Colors.deepOrange
             ),
             themeMode:
-                AppCubit.get(context).isdark ? ThemeMode.dark : ThemeMode.light,
-                
+                NewsCubit.get(context).isdark ? ThemeMode.dark : ThemeMode.light,                
           );
         },
       ),
